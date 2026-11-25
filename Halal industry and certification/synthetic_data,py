@@ -1,0 +1,320 @@
+
+import pandas as pd
+import numpy as np
+import random
+from datetime import datetime, timedelta
+
+# ==========================================
+# 1. CONFIGURATION
+# ==========================================
+
+random.seed(42)
+np.random.seed(42)
+
+N = 250
+
+districts = [
+    "Brunei-Muara",
+    "Belait",
+    "Tutong",
+    "Temburong"
+]
+
+district_weights = [0.55, 0.20, 0.17, 0.08]
+
+business_categories = [
+    "Food Manufacturing",
+    "Restaurant",
+    "Catering",
+    "Bakery",
+    "Meat Processing",
+    "Food Retail",
+    "Beverage Production",
+    "Cosmetics",
+    "Pharmaceutical",
+    "Logistics and Warehousing"
+]
+
+category_weights = [
+    0.16, 0.22, 0.10, 0.12, 0.08,
+    0.10, 0.08, 0.06, 0.03, 0.05
+]
+
+business_sizes = ["Micro", "Small", "Medium", "Large"]
+
+size_weights = [0.35, 0.35, 0.22, 0.08]
+
+ownership_types = [
+    "Sole Proprietorship",
+    "Partnership",
+    "Private Limited",
+    "Government Linked"
+]
+
+certification_types = [
+    "New Application",
+    "Renewal",
+    "Additional Product"
+]
+
+# ==========================================
+# 2. GENERATE BUSINESS RECORDS
+# ==========================================
+
+records = []
+
+start_date = datetime(2022, 1, 1)
+end_date = datetime(2025, 12, 31)
+
+date_range = (end_date - start_date).days
+
+for i in range(1, N + 1):
+
+    # Business identification
+    application_id = f"HAL-{2022 + (i % 4)}-{i:04d}"
+
+    business_name = f"Halal Business Enterprise {i:03d}"
+
+    # Business category
+    category = random.choices(
+        business_categories,
+        weights=category_weights
+    )[0]
+
+    # District
+    district = random.choices(
+        districts,
+        weights=district_weights
+    )[0]
+
+    # Business size
+    size = random.choices(
+        business_sizes,
+        weights=size_weights
+    )[0]
+
+    ownership = random.choice(ownership_types)
+
+    # Business characteristics
+    employee_ranges = {
+        "Micro": (1, 5),
+        "Small": (6, 30),
+        "Medium": (31, 100),
+        "Large": (101, 300)
+    }
+
+    employee_count = random.randint(
+        *employee_ranges[size]
+    )
+
+    years_in_operation = random.randint(1, 25)
+
+    product_count = random.randint(1, 30)
+
+    # Application date
+    application_date = start_date + timedelta(
+        days=random.randint(0, date_range)
+    )
+
+    application_type = random.choice(certification_types)
+
+    # Documentation completeness
+    documentation_completeness = random.randint(50, 100)
+
+    documents_submitted = random.randint(4, 12)
+
+    # Inspection results
+    non_compliance_count = np.random.poisson(1.5)
+
+    if documentation_completeness >= 85:
+        inspection_probability = 0.85
+    else:
+        inspection_probability = 0.60
+
+    if non_compliance_count >= 4:
+        inspection_probability -= 0.25
+
+    inspection_probability = max(
+        0.10, min(0.95, inspection_probability)
+    )
+
+    inspection_result = random.choices(
+        ["Pass", "Conditional Pass", "Fail"],
+        weights=[
+            inspection_probability,
+            0.20,
+            1 - inspection_probability - 0.20
+        ]
+    )[0]
+
+    # Certification status
+    if inspection_result == "Pass":
+        status = random.choices(
+            ["Certified", "Under Review", "Rejected"],
+            weights=[0.85, 0.10, 0.05]
+        )[0]
+
+    elif inspection_result == "Conditional Pass":
+        status = random.choices(
+            ["Under Review", "Certified", "Rejected"],
+            weights=[0.65, 0.25, 0.10]
+        )[0]
+
+    else:
+        status = random.choices(
+            ["Rejected", "Under Review"],
+            weights=[0.70, 0.30]
+        )[0]
+
+    # Processing time
+    base_processing = {
+        "Micro": 30,
+        "Small": 40,
+        "Medium": 55,
+        "Large": 70
+    }
+
+    processing_time = (
+        base_processing[size]
+        + (100 - documentation_completeness) * 0.6
+        + non_compliance_count * 8
+        + random.randint(-8, 15)
+    )
+
+    processing_time = max(
+        7, int(processing_time)
+    )
+
+    # Processing date
+    approval_date = application_date + timedelta(
+        days=processing_time
+    )
+
+    if status == "Under Review":
+        approval_date = None
+
+    # Certification validity
+    if status == "Certified":
+        certificate_issue_date = approval_date
+        certificate_expiry_date = (
+            certificate_issue_date + timedelta(days=730)
+        )
+    else:
+        certificate_issue_date = None
+        certificate_expiry_date = None
+
+    # Application fee (illustrative synthetic values)
+    fee_ranges = {
+        "Micro": (50, 150),
+        "Small": (100, 300),
+        "Medium": (200, 500),
+        "Large": (400, 1000)
+    }
+
+    application_fee = random.randint(
+        *fee_ranges[size]
+    )
+
+    # Risk classification
+    if non_compliance_count >= 4:
+        risk_level = "High"
+    elif non_compliance_count >= 2:
+        risk_level = "Medium"
+    else:
+        risk_level = "Low"
+
+    # Resubmission requirement
+    resubmission_required = (
+        documentation_completeness < 80
+        or inspection_result == "Fail"
+    )
+
+    # Generate record
+    records.append({
+        "application_id": application_id,
+        "business_name": business_name,
+        "business_category": category,
+        "business_size": size,
+        "ownership_type": ownership,
+        "district": district,
+        "application_date": application_date.date(),
+        "application_type": application_type,
+        "certification_type": "Halal Certification",
+        "certification_status": status,
+        "processing_time_days": processing_time,
+        "approval_date": (
+            approval_date.date()
+            if approval_date else None
+        ),
+        "inspection_result": inspection_result,
+        "non_compliance_count": non_compliance_count,
+        "documentation_completeness": documentation_completeness,
+        "documents_submitted": documents_submitted,
+        "employee_count": employee_count,
+        "years_in_operation": years_in_operation,
+        "product_count": product_count,
+        "estimated_application_fee_BND": application_fee,
+        "certificate_issue_date": (
+            certificate_issue_date.date()
+            if certificate_issue_date else None
+        ),
+        "certificate_expiry_date": (
+            certificate_expiry_date.date()
+            if certificate_expiry_date else None
+        ),
+        "risk_level": risk_level,
+        "resubmission_required": resubmission_required
+    })
+
+# ==========================================
+# 3. CREATE DATAFRAME
+# ==========================================
+
+df = pd.DataFrame(records)
+
+# Sort by application date
+df = df.sort_values(
+    by="application_date"
+).reset_index(drop=True)
+
+# ==========================================
+# 4. EXPORT DATA
+# ==========================================
+
+df.to_csv(
+    "halal_certification_synthetic_data.csv",
+    index=False
+)
+
+# ==========================================
+# 5. DATASET SUMMARY
+# ==========================================
+
+print("\nHALAL CERTIFICATION DATASET")
+print("=" * 45)
+
+print("Total Records:", len(df))
+print("Total Variables:", len(df.columns))
+
+print("\nCertification Status Distribution:")
+print(df["certification_status"].value_counts())
+
+print("\nBusiness Category Distribution:")
+print(df["business_category"].value_counts())
+
+print("\nDistrict Distribution:")
+print(df["district"].value_counts())
+
+print("\nAverage Processing Time:")
+print(
+    round(df["processing_time_days"].mean(), 2),
+    "days"
+)
+
+print("\nMissing Values:")
+print(df.isnull().sum())
+
+print("\nDataset Preview:")
+print(df.head(10).to_string(index=False))
+
+print("\nCSV file successfully generated!")
